@@ -728,7 +728,29 @@
             </div>
         </div>
 
-        <div id="messagesList" class="messages-grid">
+        <!-- Time Preset Card — always fixed, never draggable -->
+        <div class="messages-grid" style="margin-bottom:0; max-height:none; overflow:visible;">
+            <div class="time-preset-card" id="timePresetCard" onclick="copyTimeCard(event)" title="Click to copy BD Time + 6 min">
+                <div class="time-card-header">
+                    <div class="time-card-label">
+                        <span class="time-live-dot"></span>
+                        BD Time + 6 min
+                    </div>
+                    <span class="time-card-badge">🕐 PRESET</span>
+                </div>
+                <div class="time-display-main" id="timeDisplayMain">--:-- --</div>
+                <div class="time-display-sub">
+                    Bangladesh Standard Time <span class="highlight">+6 min</span>
+                </div>
+                <div class="time-card-footer">
+                    <div class="time-copy-hint">📋 Click to copy time</div>
+                    <div class="time-card-date" id="timeDisplayDate">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sortable message cards -->
+        <div id="messagesList" class="messages-grid" style="margin-top:10px;">
             <div class="loading">
                 <div class="spinner"></div>
             </div>
@@ -807,6 +829,7 @@
 
         function startTimeClock() {
             updateTimeClock();
+            if (timeInterval) clearInterval(timeInterval);
             timeInterval = setInterval(updateTimeClock, 1000);
         }
 
@@ -1010,8 +1033,6 @@
                 animation: 150,
                 ghostClass: 'sortable-ghost',
                 dragClass: 'sortable-drag',
-                // Exclude the time preset card from being dragged
-                filter: '.time-preset-card',
                 onEnd: () => { updateSyncStatus('Waiting to save order...'); }
             });
         }
@@ -1087,40 +1108,17 @@
             }
         };
 
-        // Display Messages — Time Preset Card always first
+        // Display Messages — Time card is FIXED & SEPARATE, only message cards here
         function displayMessages(filtered = null) {
             const messages = filtered || messagesCache;
             const container = document.getElementById('messagesList');
             const messageCount = document.getElementById('messageCount');
             messageCount.textContent = messages.length;
 
-            const now = getBDTimePlus6();
-
-            // Time Preset Card HTML
-            const timeCardHTML = `
-                <div class="time-preset-card" id="timePresetCard" onclick="copyTimeCard(event)" title="Click to copy BD Time + 6 min">
-                    <div class="time-card-header">
-                        <div class="time-card-label">
-                            <span class="time-live-dot"></span>
-                            BD Time + 6 min
-                        </div>
-                        <span class="time-card-badge">🕐 PRESET</span>
-                    </div>
-                    <div class="time-display-main" id="timeDisplayMain">${formatTime(now)}</div>
-                    <div class="time-display-sub">
-                        Bangladesh Standard Time <span class="highlight">+6 min</span>
-                    </div>
-                    <div class="time-card-footer">
-                        <div class="time-copy-hint">📋 Click to copy time</div>
-                        <div class="time-card-date" id="timeDisplayDate">${formatDate(now)}</div>
-                    </div>
-                </div>
-            `;
-
             if (messages.length === 0) {
-                container.innerHTML = timeCardHTML + '<div class="empty-state" style="width:auto;padding:20px;">No messages yet</div>';
+                container.innerHTML = '<div class="empty-state">No messages yet</div>';
             } else {
-                container.innerHTML = timeCardHTML + messages.map((msg) => `
+                container.innerHTML = messages.map((msg) => `
                     <div class="message-card" data-id="${msg.id}" onclick="copyMessage('${msg.id}', event)">
                         <div class="message-header">
                             <div class="message-title">${escapeHtml(msg.title)}</div>
@@ -1134,9 +1132,6 @@
                     </div>
                 `).join('');
             }
-
-            // Restart clock display binding after re-render
-            updateTimeClock();
         }
 
         window.filterMessages = function () {
